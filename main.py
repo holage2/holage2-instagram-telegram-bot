@@ -28,8 +28,8 @@ def login():
     try:
         if os.path.exists(SESSION_FILE):
             cl.load_settings(SESSION_FILE)
-            cl.load_session_from_file(SESSION_FILE)
-            cl.get_timeline_feed()  # To verify session is valid
+            cl.login(USERNAME, PASSWORD)
+            cl.dump_settings(SESSION_FILE)
             print("✅ Session restored.")
         else:
             raise Exception("No session file found.")
@@ -38,7 +38,7 @@ def login():
         cl = Client()
         cl.login(USERNAME, PASSWORD)
         cl.dump_settings(SESSION_FILE)
-        cl.save_session_to_file(SESSION_FILE)
+        print("✅ Logged in and session saved.")
 
 # --- Load data ---
 try:
