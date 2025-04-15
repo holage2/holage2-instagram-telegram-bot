@@ -1,3 +1,4 @@
 instagrapi
 pandas
 openpyxl
+Pillow>=8.1.1
