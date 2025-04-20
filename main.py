@@ -3,7 +3,7 @@ import random
 import pandas as pd
 import os
 from instagrapi import Client
-from instagrapi.exceptions import ClientError
+from instagrapi.exceptions import ClientError, PleaseWaitFewMinutes
 
 # Instagram credentials
 USERNAME = "Danzylage"
@@ -15,7 +15,6 @@ It might change everything! ✅ Accurate Signals 🧠 Smart Risk Control 📈 Re
 Follow me on IG: @_digital_agncy 
 Join VIP Now: 👉 https://t.me/felix_roma"""
 
-# Session file
 SESSION_FILE = f"{USERNAME}_session.json"
 
 # --- Auto-login with session restoration ---
@@ -30,11 +29,11 @@ def login():
         else:
             raise Exception("No session file.")
     except Exception as e:
-        print("🔁 Re-logging in...")
+        print("🔁 Re-logging in due to error:", e)
         cl = Client()
         cl.login(USERNAME, PASSWORD)
         cl.dump_settings(SESSION_FILE)
-        print("✅ Logged in fresh and session saved.")
+        print("✅ Fresh login and session saved.")
     cl.dump_settings(SESSION_FILE)
 
 # --- Simulate human typing ---
@@ -42,7 +41,7 @@ def simulate_typing(text):
     typed_text = ""
     for char in text:
         typed_text += char
-        time.sleep(random.uniform(0.02, 0.07))  # Human typing simulation
+        time.sleep(random.uniform(0.02, 0.07))
     return typed_text
 
 # --- Check if user already messaged ---
@@ -51,25 +50,25 @@ def already_chatted(username):
         user_id = cl.user_id_from_username(username)
         threads = cl.direct_threads(amount=20)
         for thread in threads:
-            for user in thread.users:
-                if user.username == username:
-                    print(f"💬 {username} already chatted with you.")
-                    return True
+            if any(user.username == username for user in thread.users):
+                print(f"💬 Already chatted with {username}")
+                return True
     except Exception:
         pass
     return False
 
-# --- Load sent users and usernames ---
+# --- Load sent users ---
 try:
     with open("sent_users.txt", "r") as f:
         sent_users = set(f.read().splitlines())
 except FileNotFoundError:
     sent_users = set()
 
+# --- Load followers from Excel ---
 df = pd.read_excel("followers.xlsx")
 usernames = df["userName"].dropna().unique()
 
-# --- Start process ---
+# --- Start messaging process ---
 login()
 sent_count = 0
 
@@ -86,24 +85,27 @@ for username in usernames:
         user_id = cl.user_id_from_username(username)
         message_text = simulate_typing(MESSAGE)
         cl.direct_send(message_text, [user_id])
-        print(f"✅ Sent to {username}")
-        sent_users.add(username)
+        print(f"✅ Message sent to {username}")
 
+        sent_users.add(username)
         with open("sent_users.txt", "a") as f:
             f.write(username + "\n")
 
         sent_count += 1
 
-        # Anti-detection delay (90 to 120 seconds)
+        # Random delay (anti-detection)
         delay = random.randint(90, 120)
-        print(f"⏳ Waiting {delay} seconds before next...")
+        print(f"⏳ Waiting {delay} seconds before next message...")
         time.sleep(delay)
 
-        # Stress-free break every 5 messages
         if sent_count % 5 == 0:
-            print("😴 Cooling down for 3 minutes...")
+            print("😴 Taking a 3-minute cooldown break...")
             time.sleep(180)
 
+    except PleaseWaitFewMinutes as e:
+        print(f"🚨 Instagram rate limit hit! Cooling down for 15 minutes...")
+        time.sleep(900)  # 15 minutes
     except ClientError as e:
-        print(f"❌ Error messaging {username}: {e}")
-        continue
+        print(f"❌ Client error while messaging {username}: {e}")
+    except Exception as e:
+        print(f"⚠️ Unexpected error with {username}: {e}")
