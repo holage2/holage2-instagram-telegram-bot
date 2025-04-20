@@ -10,37 +10,56 @@ USERNAME = "Danzylage"
 PASSWORD = "Anshuti1122@"
 
 # Message to send
-MESSAGE = """Thanks For Your Query check this channel 🔥
-It might change everything!
-✅ Accurate Signals
-🧠 Smart Risk Control
-📈 Real Guidance
+MESSAGE = """Thanks For Your Query check this channel 🔥 
+It might change everything! ✅ Accurate Signals 🧠 Smart Risk Control 📈 Real Guidance 
+Follow me on IG: @_digital_agncy 
+Join VIP Now: 👉 https://t.me/felix_roma"""
 
-Follow me on IG: @_digital_agncy
-Join VIP Now: 👉"""
-
-# --- Auto-login ---
-cl = Client()
+# Session file
 SESSION_FILE = f"{USERNAME}_session.json"
 
+# --- Auto-login with session restoration ---
 def login():
     global cl
+    cl = Client()
     try:
         if os.path.exists(SESSION_FILE):
             cl.load_settings(SESSION_FILE)
             cl.login(USERNAME, PASSWORD)
-            cl.dump_settings(SESSION_FILE)
             print("✅ Session restored.")
         else:
-            raise Exception("No session file found.")
-    except:
-        print("🔁 Logging in again...")
+            raise Exception("No session file.")
+    except Exception as e:
+        print("🔁 Re-logging in...")
         cl = Client()
         cl.login(USERNAME, PASSWORD)
         cl.dump_settings(SESSION_FILE)
-        print("✅ Logged in and session saved.")
+        print("✅ Logged in fresh and session saved.")
+    cl.dump_settings(SESSION_FILE)
 
-# --- Load data ---
+# --- Simulate human typing ---
+def simulate_typing(text):
+    typed_text = ""
+    for char in text:
+        typed_text += char
+        time.sleep(random.uniform(0.02, 0.07))  # Human typing simulation
+    return typed_text
+
+# --- Check if user already messaged ---
+def already_chatted(username):
+    try:
+        user_id = cl.user_id_from_username(username)
+        threads = cl.direct_threads(amount=20)
+        for thread in threads:
+            for user in thread.users:
+                if user.username == username:
+                    print(f"💬 {username} already chatted with you.")
+                    return True
+    except Exception:
+        pass
+    return False
+
+# --- Load sent users and usernames ---
 try:
     with open("sent_users.txt", "r") as f:
         sent_users = set(f.read().splitlines())
@@ -50,28 +69,7 @@ except FileNotFoundError:
 df = pd.read_excel("followers.xlsx")
 usernames = df["userName"].dropna().unique()
 
-# --- Helper Functions ---
-
-def simulate_typing(text):
-    typed = ""
-    for char in text:
-        typed += char
-        time.sleep(random.uniform(0.03, 0.1))
-    return typed
-
-def already_chatted(username):
-    try:
-        user_id = cl.user_id_from_username(username)
-        threads = cl.direct_threads(selected_filter="unread", amount=10)
-        for thread in threads:
-            if thread.users[0].username == username:
-                print(f"💬 {username} has already chatted.")
-                return True
-    except:
-        pass
-    return False
-
-# --- Send Messages ---
+# --- Start process ---
 login()
 sent_count = 0
 
@@ -86,20 +84,26 @@ for username in usernames:
 
     try:
         user_id = cl.user_id_from_username(username)
-        cl.direct_send(simulate_typing(MESSAGE), [user_id])
-        print(f"✅ Sent message to {username}")
+        message_text = simulate_typing(MESSAGE)
+        cl.direct_send(message_text, [user_id])
+        print(f"✅ Sent to {username}")
         sent_users.add(username)
+
         with open("sent_users.txt", "a") as f:
             f.write(username + "\n")
+
         sent_count += 1
+
+        # Anti-detection delay (90 to 120 seconds)
+        delay = random.randint(90, 120)
+        print(f"⏳ Waiting {delay} seconds before next...")
+        time.sleep(delay)
+
+        # Stress-free break every 5 messages
+        if sent_count % 5 == 0:
+            print("😴 Cooling down for 3 minutes...")
+            time.sleep(180)
+
     except ClientError as e:
-        print(f"❌ Failed to message {username}: {e}")
+        print(f"❌ Error messaging {username}: {e}")
         continue
-
-    # Delay between messages
-    time.sleep(random.randint(60, 90))
-
-    # Pause after every 5 messages
-    if sent_count % 5 == 0:
-        print("🕑 Sleeping 2 minutes to prevent blocking...")
-        time.sleep(120)
